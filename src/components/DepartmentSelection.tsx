@@ -1,3 +1,4 @@
+import React from 'react';
 import { Department } from '../types/medical';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Heart, Brain, Baby, Sparkles, Stethoscope, Scissors } from 'lucide-react';
@@ -25,8 +26,8 @@ export function DepartmentSelection({
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-3xl">Chọn khoa khám</h2>
-        <p className="text-muted-foreground mt-2">
+        <h2 className="text-3xl font-extrabold">Chọn khoa khám</h2>
+        <p className="text-muted-foreground font-semibold mt-2">
           Vui lòng chọn khoa phù hợp với triệu chứng của bạn
         </p>
       </div>
@@ -50,10 +51,10 @@ export function DepartmentSelection({
                     <IconComponent className="w-8 h-8 text-primary" />
                   </div>
                 </div>
-                <CardTitle className="text-xl">{department.name}</CardTitle>
+                <CardTitle className="text-xl font-extrabold">{department.name}</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription className="text-center leading-relaxed">
+                <CardDescription className="text-center leading-relaxed font-semibold">
                   {department.description}
                 </CardDescription>
               </CardContent>

@@ -1,3 +1,4 @@
+import React from 'react';
 import { Doctor } from '../types/medical';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -24,8 +25,8 @@ export function DoctorList({ doctors, selectedDoctor, onSelectDoctor }: DoctorLi
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-3xl">Chọn bác sĩ</h2>
-        <p className="text-muted-foreground mt-2">
+        <h2 className="text-3xl font-extrabold">Chọn bác sĩ</h2>
+        <p className="text-muted-foreground font-semibold mt-2">
           Danh sách bác sĩ có kinh nghiệm trong khoa đã chọn
         </p>
       </div>
@@ -52,9 +53,9 @@ export function DoctorList({ doctors, selectedDoctor, onSelectDoctor }: DoctorLi
                   </Avatar>
                   
                   <div className="flex-1">
-                    <CardTitle className="text-xl">{doctor.name}</CardTitle>
-                    <p className="text-muted-foreground">{doctor.title}</p>
-                    <p className="text-primary mt-1">{doctor.specialization}</p>
+                    <CardTitle className="text-xl font-extrabold">{doctor.name}</CardTitle>
+                    <p className="text-muted-foreground font-semibold">{doctor.title}</p>
+                    <p className="text-primary font-semibold mt-1">{doctor.specialization}</p>
                     
                     <div className="flex items-center gap-2 mt-2">
                       <div className="flex items-center gap-1">

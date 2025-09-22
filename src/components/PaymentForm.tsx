@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Appointment, PaymentInfo } from '../types/medical';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Separator } from './ui/separator';
 import { CreditCard, Building2, Wallet, CheckCircle, Mail } from 'lucide-react';
 import { formatCurrency, formatDate } from '../data/mockData';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface PaymentFormProps {
   appointment: Omit<Appointment, 'id' | 'status'>;
