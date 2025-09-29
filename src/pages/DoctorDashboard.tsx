@@ -5,6 +5,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Calendar, Clock, DollarSign, Users, CalendarDays, CheckCircle, AlertCircle } from 'lucide-react';
 import { Layout } from '../components/Layout';
+import { apiService } from '../services/api';
 
 interface Appointment {
   id: string;
@@ -31,56 +32,91 @@ export const DoctorDashboard: React.FC = () => {
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
-  // Mock data - sẽ thay thế bằng API calls
+  // Load data from API
   useEffect(() => {
-    // Mock appointments
-    const mockAppointments: Appointment[] = [
-      {
-        id: '1',
-        patient_name: 'Nguyễn Văn A',
-        patient_phone: '0123456789',
-        date: '2024-01-15',
-        time: '09:00',
-        status: 'confirmed',
-        fee: 500000,
-        notes: 'Khám tim mạch'
-      },
-      {
-        id: '2',
-        patient_name: 'Trần Thị B',
-        patient_phone: '0987654321',
-        date: '2024-01-15',
-        time: '10:30',
-        status: 'pending',
-        fee: 500000,
-        notes: 'Tái khám huyết áp'
-      },
-      {
-        id: '3',
-        patient_name: 'Lê Văn C',
-        patient_phone: '0369852147',
-        date: '2024-01-16',
-        time: '14:00',
-        status: 'completed',
-        fee: 500000,
-        notes: 'Khám tổng quát'
-      }
-    ];
-
-    // Mock time slots
-    const mockTimeSlots: TimeSlot[] = [
-      { id: '1', date: '2024-01-15', time: '08:00', is_available: true },
-      { id: '2', date: '2024-01-15', time: '08:30', is_available: false },
-      { id: '3', date: '2024-01-15', time: '09:00', is_available: false },
-      { id: '4', date: '2024-01-15', time: '09:30', is_available: true },
-      { id: '5', date: '2024-01-15', time: '10:00', is_available: true },
-      { id: '6', date: '2024-01-15', time: '10:30', is_available: false },
-    ];
-
-    setAppointments(mockAppointments);
-    setTimeSlots(mockTimeSlots);
-    setTotalRevenue(1500000); // Mock total revenue
+    loadDoctorData();
   }, []);
+
+  const loadDoctorData = async () => {
+    try {
+      // Load appointments for the doctor
+      const appointmentsResponse = await apiService.getAdminAppointments({ per_page: 50 });
+      if (appointmentsResponse.success && appointmentsResponse.data) {
+        const appointmentsData = appointmentsResponse.data.data || [];
+        // Filter appointments for current doctor (assuming we have doctor_id in user context)
+        const doctorAppointments = appointmentsData.filter((apt: any) => 
+          apt.doctor_id === user?.user_id || apt.doctor?.user_id === user?.user_id
+        );
+        
+        const formattedAppointments: Appointment[] = doctorAppointments.map((apt: any) => ({
+          id: apt.appointment_id || apt.id,
+          patient_name: apt.patient?.fullname || apt.patient_name || 'Bệnh nhân',
+          patient_phone: apt.patient?.phone || apt.patient_phone || '',
+          date: apt.date,
+          time: apt.time,
+          status: apt.status,
+          fee: apt.fee || 500000,
+          notes: apt.notes || apt.symptoms || ''
+        }));
+        
+        setAppointments(formattedAppointments);
+        
+        // Calculate total revenue
+        const revenue = formattedAppointments
+          .filter(apt => apt.status === 'completed')
+          .reduce((sum, apt) => sum + apt.fee, 0);
+        setTotalRevenue(revenue);
+      }
+    } catch (error) {
+      console.error('Error loading doctor data:', error);
+      // Fallback to mock data on error
+      const mockAppointments: Appointment[] = [
+        {
+          id: '1',
+          patient_name: 'Nguyễn Văn A',
+          patient_phone: '0123456789',
+          date: '2024-01-15',
+          time: '09:00',
+          status: 'confirmed',
+          fee: 500000,
+          notes: 'Khám tim mạch'
+        },
+        {
+          id: '2',
+          patient_name: 'Trần Thị B',
+          patient_phone: '0987654321',
+          date: '2024-01-15',
+          time: '10:30',
+          status: 'pending',
+          fee: 500000,
+          notes: 'Tái khám huyết áp'
+        },
+        {
+          id: '3',
+          patient_name: 'Lê Văn C',
+          patient_phone: '0369852147',
+          date: '2024-01-16',
+          time: '14:00',
+          status: 'completed',
+          fee: 500000,
+          notes: 'Khám tổng quát'
+        }
+      ];
+
+      const mockTimeSlots: TimeSlot[] = [
+        { id: '1', date: '2024-01-15', time: '08:00', is_available: true },
+        { id: '2', date: '2024-01-15', time: '08:30', is_available: false },
+        { id: '3', date: '2024-01-15', time: '09:00', is_available: false },
+        { id: '4', date: '2024-01-15', time: '09:30', is_available: true },
+        { id: '5', date: '2024-01-15', time: '10:00', is_available: true },
+        { id: '6', date: '2024-01-15', time: '10:30', is_available: false },
+      ];
+
+      setAppointments(mockAppointments);
+      setTimeSlots(mockTimeSlots);
+      setTotalRevenue(1500000);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -99,6 +135,24 @@ export const DoctorDashboard: React.FC = () => {
       case 'completed': return 'Hoàn thành';
       case 'cancelled': return 'Đã hủy';
       default: return status;
+    }
+  };
+
+  const handleUpdateAppointmentStatus = async (appointmentId: string, newStatus: string) => {
+    try {
+      const response = await apiService.updateAppointment(appointmentId, { status: newStatus });
+      
+      if (response.success) {
+        await loadDoctorData(); // Reload data
+        // Show success message
+        const statusText = newStatus === 'confirmed' ? 'xác nhận' : 'hoàn thành';
+        alert(`Đã ${statusText} lịch hẹn thành công!`);
+      } else {
+        alert('Không thể cập nhật trạng thái lịch hẹn');
+      }
+    } catch (error) {
+      console.error('Error updating appointment status:', error);
+      alert('Lỗi khi cập nhật trạng thái lịch hẹn');
     }
   };
 
@@ -209,12 +263,20 @@ export const DoctorDashboard: React.FC = () => {
                           </p>
                           <div className="flex gap-2 mt-2">
                             {appointment.status === 'pending' && (
-                              <Button size="sm" variant="outline">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleUpdateAppointmentStatus(appointment.id, 'confirmed')}
+                              >
                                 Xác nhận
                               </Button>
                             )}
                             {appointment.status === 'confirmed' && (
-                              <Button size="sm" variant="outline">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleUpdateAppointmentStatus(appointment.id, 'completed')}
+                              >
                                 Hoàn thành
                               </Button>
                             )}

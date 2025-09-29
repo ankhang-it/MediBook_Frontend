@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppointmentBooking } from '../components/AppointmentBooking';
 import { doctors } from '../data/mockData';
 import { TimeSlot, Appointment } from '../types/medical';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { apiService } from '../services/api';
 
 export const BookingPage: React.FC = () => {
   const { doctorId } = useParams<{ doctorId: string }>();
@@ -17,9 +18,28 @@ export const BookingPage: React.FC = () => {
     setSelectedSlot(slot);
   };
 
-  const handleBookAppointment = (appointment: Omit<Appointment, 'id' | 'status'>) => {
-    setAppointmentData(appointment);
-    navigate('/payment', { state: { appointment, doctorName: selectedDoctorData?.name } });
+  const handleBookAppointment = async (appointment: Omit<Appointment, 'id' | 'status'>) => {
+    try {
+      // Create appointment via API
+      const response = await apiService.createAppointment({
+        doctor_id: doctorId,
+        date: appointment.date,
+        time: appointment.time,
+        symptoms: appointment.symptoms,
+        notes: appointment.symptoms, // Using symptoms as notes for now
+      });
+
+      if (response.success) {
+        setAppointmentData(appointment);
+        navigate('/payment', { state: { appointment, doctorName: selectedDoctorData?.name } });
+        toast.success('Đặt lịch thành công! Vui lòng thanh toán để hoàn tất.');
+      } else {
+        toast.error(response.message || 'Không thể đặt lịch hẹn');
+      }
+    } catch (error) {
+      console.error('Error booking appointment:', error);
+      toast.error('Lỗi khi đặt lịch hẹn');
+    }
   };
 
   if (!selectedDoctorData) {

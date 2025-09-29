@@ -164,13 +164,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             redirectPath = '/doctor-dashboard';
             break;
           case 'admin':
-            redirectPath = '/admin-dashboard';
+            redirectPath = '/admin';
             break;
           case 'patient':
           default:
-            // For patients, check if they were trying to access a specific page
-            const from = location.state?.from?.pathname || '/';
-            redirectPath = from;
+            // For patients, redirect to patient dashboard
+            redirectPath = '/patient-dashboard';
             break;
         }
         
@@ -209,11 +208,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             redirectPath = '/doctor-dashboard';
             break;
           case 'admin':
-            redirectPath = '/admin-dashboard';
+            redirectPath = '/admin';
             break;
           case 'patient':
           default:
-            redirectPath = '/';
+            redirectPath = '/patient-dashboard';
             break;
         }
         

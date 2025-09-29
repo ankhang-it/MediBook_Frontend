@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Users, Stethoscope, Building2, Calendar, TrendingUp, Activity, Clock, CheckCircle, Settings } from 'lucide-react';
+import { apiService } from '../../services/api';
 
 interface DashboardStats {
   totalPatients: number;
@@ -37,59 +38,54 @@ export const DashboardOverview: React.FC = () => {
 
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
 
-  // Mock data - sẽ thay thế bằng API calls
+  // Load dashboard data from API
   useEffect(() => {
-    // Mock stats
-    setStats({
-      totalPatients: 1250,
-      totalDoctors: 45,
-      totalSpecialties: 6,
-      totalAppointments: 3420,
-      todayAppointments: 28,
-      pendingAppointments: 12,
-      completedAppointments: 16,
-      revenue: 125000000
-    });
-
-    // Mock recent activities
-    setRecentActivities([
-      {
-        id: '1',
-        type: 'patient_registered',
-        message: 'Bệnh nhân mới đăng ký',
-        timestamp: '2024-01-21T10:30:00Z',
-        user: 'Nguyễn Văn A'
-      },
-      {
-        id: '2',
-        type: 'appointment_booked',
-        message: 'Lịch hẹn mới được đặt',
-        timestamp: '2024-01-21T09:15:00Z',
-        user: 'Trần Thị B'
-      },
-      {
-        id: '3',
-        type: 'appointment_completed',
-        message: 'Lịch hẹn đã hoàn thành',
-        timestamp: '2024-01-21T08:45:00Z',
-        user: 'Lê Văn C'
-      },
-      {
-        id: '4',
-        type: 'doctor_added',
-        message: 'Bác sĩ mới được thêm',
-        timestamp: '2024-01-20T16:20:00Z',
-        user: 'Bác sĩ Phạm Thị D'
-      },
-      {
-        id: '5',
-        type: 'appointment_booked',
-        message: 'Lịch hẹn mới được đặt',
-        timestamp: '2024-01-20T14:30:00Z',
-        user: 'Hoàng Văn E'
-      }
-    ]);
+    loadDashboardData();
   }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      const response = await apiService.getAdminDashboard();
+      if (response.success && response.data) {
+        const data = response.data;
+        setStats({
+          totalPatients: data.total_patients || 0,
+          totalDoctors: data.total_doctors || 0,
+          totalSpecialties: 10, // TODO: Get from API
+          totalAppointments: data.total_appointments || 0,
+          todayAppointments: 0, // TODO: Calculate from appointments
+          pendingAppointments: data.pending_appointments || 0,
+          completedAppointments: data.completed_appointments || 0,
+          revenue: data.total_revenue || 0
+        });
+
+        // Convert recent appointments to activities
+        if (data.recent_appointments) {
+          const activities = data.recent_appointments.map((appointment: any, index: number) => ({
+            id: appointment.appointment_id || index.toString(),
+            type: 'appointment_booked',
+            message: `Lịch hẹn mới với ${appointment.doctor?.fullname || 'Bác sĩ'}`,
+            timestamp: appointment.created_at,
+            user: appointment.patient?.fullname || 'Bệnh nhân'
+          }));
+          setRecentActivities(activities);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+      // Fallback to mock data if API fails
+      setStats({
+        totalPatients: 0,
+        totalDoctors: 0,
+        totalSpecialties: 0,
+        totalAppointments: 0,
+        todayAppointments: 0,
+        pendingAppointments: 0,
+        completedAppointments: 0,
+        revenue: 0
+      });
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -154,64 +150,60 @@ export const DashboardOverview: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         <Card className="bg-white rounded-xl shadow-sm border border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Today's Money</CardTitle>
-            <div className="p-2 bg-green-100 rounded-lg">
-              <TrendingUp className="h-4 w-4 text-green-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">$53k</div>
-            <p className="text-xs text-green-600 mt-1 flex items-center">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              +55% than last week
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Today's Users</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">Tổng Bệnh nhân</CardTitle>
             <div className="p-2 bg-blue-100 rounded-lg">
               <Users className="h-4 w-4 text-blue-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">2,300</div>
-            <p className="text-xs text-green-600 mt-1 flex items-center">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              +3% than last month
+            <div className="text-2xl font-bold text-gray-900">{stats.totalPatients}</div>
+            <p className="text-xs text-gray-500 mt-1">
+              Bệnh nhân đã đăng ký
             </p>
           </CardContent>
         </Card>
 
         <Card className="bg-white rounded-xl shadow-sm border border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Ads Views</CardTitle>
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Activity className="h-4 w-4 text-purple-600" />
+            <CardTitle className="text-sm font-medium text-gray-600">Tổng Bác sĩ</CardTitle>
+            <div className="p-2 bg-green-100 rounded-lg">
+              <Stethoscope className="h-4 w-4 text-green-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">3,462</div>
-            <p className="text-xs text-red-600 mt-1 flex items-center">
-              <TrendingUp className="h-3 w-3 mr-1 rotate-180" />
-              -2% than yesterday
+            <div className="text-2xl font-bold text-gray-900">{stats.totalDoctors}</div>
+            <p className="text-xs text-gray-500 mt-1">
+              Bác sĩ trong hệ thống
             </p>
           </CardContent>
         </Card>
 
         <Card className="bg-white rounded-xl shadow-sm border border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Sales</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">Lịch hẹn</CardTitle>
             <div className="p-2 bg-orange-100 rounded-lg">
-              <Building2 className="h-4 w-4 text-orange-600" />
+              <Calendar className="h-4 w-4 text-orange-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">$103,430</div>
-            <p className="text-xs text-green-600 mt-1 flex items-center">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              +5% than yesterday
+            <div className="text-2xl font-bold text-gray-900">{stats.totalAppointments}</div>
+            <p className="text-xs text-gray-500 mt-1">
+              Tổng số lịch hẹn
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">Doanh thu</CardTitle>
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <TrendingUp className="h-4 w-4 text-purple-600" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-900">{formatCurrency(stats.revenue)}</div>
+            <p className="text-xs text-gray-500 mt-1">
+              Tổng doanh thu
             </p>
           </CardContent>
         </Card>

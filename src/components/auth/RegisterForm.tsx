@@ -48,11 +48,24 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
   useEffect(() => {
     const loadSpecialties = async () => {
       try {
-        // TODO: Replace with actual API call when specialties endpoint is ready
-        // const response = await apiService.getSpecialties();
-        // setSpecialties(response.data);
-        
-        // For now, use mock data that matches the seeded data
+        const response = await apiService.getSpecialties();
+        if (response.success && response.data) {
+          setSpecialties(response.data.data || []);
+        } else {
+          // Fallback to mock data if API fails
+          const mockSpecialties: Specialty[] = [
+            { specialty_id: '1', name: 'Tim mạch', description: 'Khoa chuyên điều trị các bệnh lý về tim mạch và huyết áp' },
+            { specialty_id: '2', name: 'Thần kinh', description: 'Khoa chuyên điều trị các bệnh lý về hệ thần kinh' },
+            { specialty_id: '3', name: 'Nhi khoa', description: 'Khoa chuyên chăm sóc sức khỏe trẻ em từ sơ sinh đến 18 tuổi' },
+            { specialty_id: '4', name: 'Da liễu', description: 'Khoa chuyên điều trị các bệnh lý về da và thẩm mỹ da' },
+            { specialty_id: '5', name: 'Nội khoa', description: 'Khoa chuyên điều trị các bệnh lý nội khoa tổng quát' },
+            { specialty_id: '6', name: 'Ngoại khoa', description: 'Khoa chuyên thực hiện các ca phẫu thuật và điều trị ngoại khoa' },
+          ];
+          setSpecialties(mockSpecialties);
+        }
+      } catch (error) {
+        console.error('Failed to load specialties:', error);
+        // Fallback to mock data on error
         const mockSpecialties: Specialty[] = [
           { specialty_id: '1', name: 'Tim mạch', description: 'Khoa chuyên điều trị các bệnh lý về tim mạch và huyết áp' },
           { specialty_id: '2', name: 'Thần kinh', description: 'Khoa chuyên điều trị các bệnh lý về hệ thần kinh' },
@@ -62,8 +75,6 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
           { specialty_id: '6', name: 'Ngoại khoa', description: 'Khoa chuyên thực hiện các ca phẫu thuật và điều trị ngoại khoa' },
         ];
         setSpecialties(mockSpecialties);
-      } catch (error) {
-        console.error('Failed to load specialties:', error);
       }
     };
 

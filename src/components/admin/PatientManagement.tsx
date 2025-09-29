@@ -8,19 +8,24 @@ import { Badge } from '../ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Search, Plus, Edit, Trash2, Eye, User, Phone, Mail, Calendar, MapPin } from 'lucide-react';
+import { apiService } from '../../services/api';
 
 interface Patient {
+  patient_id: string;
   user_id: string;
-  username: string;
-  email: string;
-  phone?: string;
-  role: 'patient';
   fullname: string;
   dob?: string;
   gender?: 'male' | 'female' | 'other';
   address?: string;
   medical_history?: string;
   created_at: string;
+  user: {
+    user_id: string;
+    username: string;
+    email: string;
+    phone?: string;
+    role: 'patient';
+  };
 }
 
 export const PatientManagement: React.FC = () => {
@@ -30,99 +35,79 @@ export const PatientManagement: React.FC = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock data - sẽ thay thế bằng API calls
+  // Load data from API
   useEffect(() => {
-    const mockPatients: Patient[] = [
-      {
-        user_id: '1',
-        username: 'patient1',
-        email: 'patient1@example.com',
-        phone: '0123456789',
-        role: 'patient',
-        fullname: 'Nguyễn Văn A',
-        dob: '1990-01-01',
-        gender: 'male',
-        address: '123 Đường ABC, Quận 1, TP.HCM',
-        medical_history: 'Tiền sử bệnh tim',
-        created_at: '2024-01-01'
-      },
-      {
-        user_id: '2',
-        username: 'patient2',
-        email: 'patient2@example.com',
-        phone: '0987654321',
-        role: 'patient',
-        fullname: 'Trần Thị B',
-        dob: '1985-05-15',
-        gender: 'female',
-        address: '456 Đường XYZ, Quận 2, TP.HCM',
-        medical_history: 'Tiền sử bệnh huyết áp',
-        created_at: '2024-01-02'
-      },
-      {
-        user_id: '3',
-        username: 'patient3',
-        email: 'patient3@example.com',
-        phone: '0369852147',
-        role: 'patient',
-        fullname: 'Lê Văn C',
-        dob: '1992-12-20',
-        gender: 'male',
-        address: '789 Đường DEF, Quận 3, TP.HCM',
-        created_at: '2024-01-03'
-      }
-    ];
-    setPatients(mockPatients);
+    loadPatients();
   }, []);
+
+  const loadPatients = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await apiService.getAdminPatients({ per_page: 50 });
+      if (response.success && response.data) {
+        setPatients(response.data.data || []);
+      } else {
+        setError('Không thể tải danh sách bệnh nhân');
+      }
+    } catch (error) {
+      console.error('Error loading patients:', error);
+      setError('Lỗi khi tải danh sách bệnh nhân');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filteredPatients = patients.filter(patient =>
     patient.fullname.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    patient.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    patient.phone?.includes(searchTerm) ||
-    patient.username.toLowerCase().includes(searchTerm.toLowerCase())
+    patient.user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    patient.user.phone?.includes(searchTerm) ||
+    patient.user.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleAddPatient = async (data: any) => {
     setIsLoading(true);
     try {
-      // TODO: API call to add patient
-      console.log('Adding patient:', data);
-      
-      // Mock add
-      const newPatient: Patient = {
-        user_id: Date.now().toString(),
+      setError(null);
+      const response = await apiService.createUser({
         ...data,
-        role: 'patient',
-        created_at: new Date().toISOString().split('T')[0]
-      };
+        role: 'patient'
+      });
       
-      setPatients(prev => [...prev, newPatient]);
-      setIsAddDialogOpen(false);
+      if (response.success) {
+        await loadPatients(); // Reload patients list
+        setIsAddDialogOpen(false);
+      } else {
+        setError(response.message || 'Không thể thêm bệnh nhân');
+      }
     } catch (error) {
       console.error('Error adding patient:', error);
+      setError('Lỗi khi thêm bệnh nhân');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleEditPatient = async (data: any) => {
+    if (!editingPatient) return;
+    
     setIsLoading(true);
     try {
-      // TODO: API call to edit patient
-      console.log('Editing patient:', data);
+      setError(null);
+      const response = await apiService.updateUser(editingPatient.user.user_id, data);
       
-      // Mock edit
-      setPatients(prev => prev.map(patient => 
-        patient.user_id === editingPatient?.user_id 
-          ? { ...patient, ...data }
-          : patient
-      ));
-      
-      setIsEditDialogOpen(false);
-      setEditingPatient(null);
+      if (response.success) {
+        await loadPatients(); // Reload patients list
+        setIsEditDialogOpen(false);
+        setEditingPatient(null);
+      } else {
+        setError(response.message || 'Không thể cập nhật bệnh nhân');
+      }
     } catch (error) {
       console.error('Error editing patient:', error);
+      setError('Lỗi khi cập nhật bệnh nhân');
     } finally {
       setIsLoading(false);
     }
@@ -131,13 +116,17 @@ export const PatientManagement: React.FC = () => {
   const handleDeletePatient = async (patientId: string) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa bệnh nhân này?')) {
       try {
-        // TODO: API call to delete patient
-        console.log('Deleting patient:', patientId);
+        setError(null);
+        const response = await apiService.deleteUser(patientId);
         
-        // Mock delete
-        setPatients(prev => prev.filter(patient => patient.user_id !== patientId));
+        if (response.success) {
+          await loadPatients(); // Reload patients list
+        } else {
+          setError(response.message || 'Không thể xóa bệnh nhân');
+        }
       } catch (error) {
         console.error('Error deleting patient:', error);
+        setError('Lỗi khi xóa bệnh nhân');
       }
     }
   };
@@ -202,79 +191,95 @@ export const PatientManagement: React.FC = () => {
         </Badge>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
+      )}
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className="text-center py-8">
+          <div className="text-gray-500">Đang tải dữ liệu...</div>
+        </div>
+      )}
+
       {/* Patients List */}
-      <div className="grid gap-4">
-        {filteredPatients.map((patient) => (
-          <Card key={patient.user_id}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center justify-center w-12 h-12 bg-primary/10 rounded-full">
-                      <User className="h-6 w-6 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900">{patient.fullname}</h3>
-                      <div className="flex items-center space-x-4 mt-1 text-sm text-gray-600">
-                        <div className="flex items-center space-x-1">
-                          <Mail className="h-4 w-4" />
-                          <span>{patient.email}</span>
-                        </div>
-                        {patient.phone && (
+      {!isLoading && (
+        <div className="grid gap-4">
+          {filteredPatients.map((patient) => (
+            <Card key={patient.patient_id}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center justify-center w-12 h-12 bg-primary/10 rounded-full">
+                        <User className="h-6 w-6 text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900">{patient.fullname}</h3>
+                        <div className="flex items-center space-x-4 mt-1 text-sm text-gray-600">
                           <div className="flex items-center space-x-1">
-                            <Phone className="h-4 w-4" />
-                            <span>{patient.phone}</span>
+                            <Mail className="h-4 w-4" />
+                            <span>{patient.user.email}</span>
+                          </div>
+                          {patient.user.phone && (
+                            <div className="flex items-center space-x-1">
+                              <Phone className="h-4 w-4" />
+                              <span>{patient.user.phone}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                          {patient.dob && (
+                            <div className="flex items-center space-x-1">
+                              <Calendar className="h-4 w-4" />
+                              <span>{formatDate(patient.dob)}</span>
+                            </div>
+                          )}
+                          <Badge variant="outline" className="text-xs">
+                            {getGenderText(patient.gender)}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {patient.user.username}
+                          </Badge>
+                        </div>
+                        {patient.address && (
+                          <div className="flex items-center space-x-1 mt-2 text-sm text-gray-500">
+                            <MapPin className="h-4 w-4" />
+                            <span>{patient.address}</span>
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
-                        {patient.dob && (
-                          <div className="flex items-center space-x-1">
-                            <Calendar className="h-4 w-4" />
-                            <span>{formatDate(patient.dob)}</span>
-                          </div>
-                        )}
-                        <Badge variant="outline" className="text-xs">
-                          {getGenderText(patient.gender)}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {patient.username}
-                        </Badge>
-                      </div>
-                      {patient.address && (
-                        <div className="flex items-center space-x-1 mt-2 text-sm text-gray-500">
-                          <MapPin className="h-4 w-4" />
-                          <span>{patient.address}</span>
-                        </div>
-                      )}
                     </div>
                   </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setEditingPatient(patient);
+                        setIsEditDialogOpen(true);
+                      }}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDeletePatient(patient.user.user_id)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setEditingPatient(patient);
-                      setIsEditDialogOpen(true);
-                    }}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDeletePatient(patient.user_id)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -307,11 +312,11 @@ interface PatientFormProps {
 
 const PatientForm: React.FC<PatientFormProps> = ({ onSubmit, isLoading, submitText, initialData }) => {
   const [formData, setFormData] = useState({
-    username: initialData?.username || '',
-    email: initialData?.email || '',
+    username: initialData?.user?.username || '',
+    email: initialData?.user?.email || '',
     password: '',
     fullname: initialData?.fullname || '',
-    phone: initialData?.phone || '',
+    phone: initialData?.user?.phone || '',
     dob: initialData?.dob || '',
     gender: initialData?.gender || 'male',
     address: initialData?.address || '',

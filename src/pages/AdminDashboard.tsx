@@ -1,59 +1,27 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { AdminSidebar } from '../components/admin/AdminSidebar';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { DashboardOverview } from '../components/admin/DashboardOverview';
-import { PatientManagement } from '../components/admin/PatientManagement';
-import { DoctorManagement } from '../components/admin/DoctorManagement';
-import { SpecialtyManagement } from '../components/admin/SpecialtyManagement';
 import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Badge } from '../components/ui/badge';
-import { Search, Bell, Settings, Star, Menu, X, User, LogOut } from 'lucide-react';
+import { User, LogOut, Home, Users, Stethoscope, Building2, Calendar } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return <DashboardOverview />;
-      case 'patients':
-        return <PatientManagement />;
-      case 'doctors':
-        return <DoctorManagement />;
-      case 'specialties':
-        return <SpecialtyManagement />;
-      case 'appointments':
-        return (
-          <div className="text-center py-12">
-            <h3 className="text-lg font-semibold text-gray-900">Quản lý Lịch hẹn</h3>
-            <p className="text-gray-500 mt-2">Tính năng đang được phát triển</p>
-          </div>
-        );
-      case 'settings':
-        return (
-          <div className="text-center py-12">
-            <h3 className="text-lg font-semibold text-gray-900">Cài đặt Hệ thống</h3>
-            <p className="text-gray-500 mt-2">Tính năng đang được phát triển</p>
-          </div>
-        );
-      default:
-        return <DashboardOverview />;
-    }
-  };
+  const navigationItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/admin' },
+    { id: 'users', label: 'Quản lý Người dùng', icon: Users, path: '/admin/users' },
+    { id: 'doctors', label: 'Quản lý Bác sĩ', icon: Stethoscope, path: '/admin/doctors' },
+    { id: 'patients', label: 'Quản lý Bệnh nhân', icon: User, path: '/admin/patients' },
+    { id: 'specialties', label: 'Quản lý Chuyên khoa', icon: Building2, path: '/admin/specialties' },
+    { id: 'appointments', label: 'Quản lý Lịch hẹn', icon: Calendar, path: '/admin/appointments' },
+  ];
 
-  const getPageTitle = () => {
-    switch (activeTab) {
-      case 'dashboard': return 'Dashboard';
-      case 'patients': return 'Quản lý Bệnh nhân';
-      case 'doctors': return 'Quản lý Bác sĩ';
-      case 'specialties': return 'Quản lý Chuyên khoa';
-      case 'appointments': return 'Quản lý Lịch hẹn';
-      case 'settings': return 'Cài đặt Hệ thống';
-      default: return 'Dashboard';
-    }
+  const isActivePath = (path: string) => {
+    return location.pathname === path;
   };
 
   const handleLogout = async () => {
@@ -66,71 +34,64 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Left Sidebar - 1/6 of screen width */}
-      <div className="w-1/6 h-screen bg-white shadow-lg border-r border-gray-200">
-        <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+      {/* Left Sidebar */}
+      <div className="w-64 h-screen bg-white shadow-lg border-r border-gray-200">
+        <div className="p-6">
+          <div className="flex items-center space-x-2 mb-8">
+            <div className="w-8 h-8 bg-gradient-to-br from-primary to-blue-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">MB</span>
+            </div>
+            <span className="text-xl font-bold text-gray-900">MediBook</span>
+          </div>
+          
+          <nav className="space-y-2">
+            {navigationItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = isActivePath(item.path);
+              
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => navigate(item.path)}
+                  className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                    isActive
+                      ? 'bg-primary text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span className="font-medium">{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
       </div>
 
-      {/* Main Content Area - 6/7 of screen height */}
+      {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-screen">
         {/* Top Header Bar */}
-        <div className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0">
+        <div className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
           <div className="flex items-center justify-between">
-            {/* Left Section */}
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-primary to-blue-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">PK</span>
-                </div>
-                <div>
-                  <span className="text-sm text-gray-500">Pages / </span>
-                  <span className="text-sm font-medium text-gray-900">{getPageTitle()}</span>
-                </div>
-              </div>
+              <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
             </div>
 
-            {/* Center Section - Search */}
-            <div className="flex-1 max-w-xs mx-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search..."
-                  className="pl-10 bg-gray-50 border-gray-200 focus:bg-white h-9 text-sm"
-                />
-              </div>
-            </div>
-
-            {/* Right Section */}
-            <div className="flex items-center space-x-3">
-              <Button size="sm" className="bg-pink-500 hover:bg-pink-600 text-white">
-                Online Builder
-              </Button>
-              
-              <div className="flex items-center space-x-1 text-gray-600">
-                <Star className="h-4 w-4" />
-                <span className="text-sm font-medium">11,178</span>
-              </div>
-              
-              <Button variant="ghost" size="sm">
-                <Settings className="h-5 w-5" />
-              </Button>
-              
-              <Button variant="ghost" size="sm" className="relative">
-                <Bell className="h-5 w-5" />
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-red-500">
-                  3
-                </Badge>
-              </Button>
-              
+            <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
                   <User className="h-4 w-4 text-gray-600" />
                 </div>
-                <div className="hidden md:block">
-                  <div className="text-sm font-medium text-gray-900">{user?.username}</div>
-                  <div className="text-xs text-gray-500">{user?.role}</div>
+                <div className="text-sm">
+                  <div className="font-medium text-gray-900">{user?.username}</div>
+                  <div className="text-gray-500">Admin</div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={handleLogout}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleLogout}
+                  className="text-gray-600 hover:text-gray-900"
+                >
                   <LogOut className="h-4 w-4" />
                 </Button>
               </div>
@@ -138,13 +99,9 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Content Area */}
-        <div className="flex-1 overflow-auto bg-gray-50">
-          <div className="p-6">
-            <div className="animate-fade-in">
-              {renderContent()}
-            </div>
-          </div>
+        {/* Main Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <DashboardOverview />
         </div>
       </div>
     </div>

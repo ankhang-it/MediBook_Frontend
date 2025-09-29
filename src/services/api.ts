@@ -184,6 +184,167 @@ class ApiService {
     return !!this.token;
   }
 
+  // Admin methods
+  async getAdminDashboard(): Promise<ApiResponse<any>> {
+    return this.request('/admin/dashboard');
+  }
+
+  async getAdminUsers(params?: { per_page?: number; search?: string; role?: string }): Promise<ApiResponse<any>> {
+    const queryParams = new URLSearchParams();
+    if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.role) queryParams.append('role', params.role);
+    
+    const queryString = queryParams.toString();
+    return this.request(`/admin/users${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getAdminDoctors(params?: { per_page?: number; search?: string; specialty?: string }): Promise<ApiResponse<any>> {
+    const queryParams = new URLSearchParams();
+    if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.specialty) queryParams.append('specialty', params.specialty);
+    
+    const queryString = queryParams.toString();
+    return this.request(`/admin/doctors${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getAdminPatients(params?: { per_page?: number; search?: string }): Promise<ApiResponse<any>> {
+    const queryParams = new URLSearchParams();
+    if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
+    if (params?.search) queryParams.append('search', params.search);
+    
+    const queryString = queryParams.toString();
+    return this.request(`/admin/patients${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async createUser(userData: any): Promise<ApiResponse<any>> {
+    return this.request('/admin/users', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  }
+
+  async updateUser(userId: string, userData: any): Promise<ApiResponse<any>> {
+    return this.request(`/admin/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    });
+  }
+
+  async deleteUser(userId: string): Promise<ApiResponse> {
+    return this.request(`/admin/users/${userId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getAdminAppointments(params?: { per_page?: number; status?: string }): Promise<ApiResponse<any>> {
+    const queryParams = new URLSearchParams();
+    if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
+    if (params?.status) queryParams.append('status', params.status);
+    
+    const queryString = queryParams.toString();
+    return this.request(`/admin/appointments${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Specialty methods
+  async getSpecialties(params?: { per_page?: number; search?: string }): Promise<ApiResponse<any>> {
+    const queryParams = new URLSearchParams();
+    if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
+    if (params?.search) queryParams.append('search', params.search);
+    
+    const queryString = queryParams.toString();
+    return this.request(`/specialties${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getSpecialty(id: string): Promise<ApiResponse<any>> {
+    return this.request(`/specialties/${id}`);
+  }
+
+  async createSpecialty(specialtyData: any): Promise<ApiResponse<any>> {
+    return this.request('/specialties', {
+      method: 'POST',
+      body: JSON.stringify(specialtyData),
+    });
+  }
+
+  async updateSpecialty(id: string, specialtyData: any): Promise<ApiResponse<any>> {
+    return this.request(`/specialties/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(specialtyData),
+    });
+  }
+
+  async deleteSpecialty(id: string): Promise<ApiResponse> {
+    return this.request(`/specialties/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getDoctorsBySpecialty(id: string, params?: { per_page?: number; search?: string }): Promise<ApiResponse<any>> {
+    const queryParams = new URLSearchParams();
+    if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
+    if (params?.search) queryParams.append('search', params.search);
+    
+    const queryString = queryParams.toString();
+    return this.request(`/specialties/${id}/doctors${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Patient methods
+  async getPatientProfile(): Promise<ApiResponse<any>> {
+    return this.request('/patient/profile');
+  }
+
+  async updatePatientProfile(data: any): Promise<ApiResponse> {
+    return this.request('/patient/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async uploadPatientAvatar(file: File): Promise<ApiResponse<{ avatar_url: string }>> {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    return this.request<{ avatar_url: string }>('/patient/avatar', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        // Don't set Content-Type, let browser set it with boundary for FormData
+        ...(this.token && { Authorization: `Bearer ${this.token}` }),
+      },
+    });
+  }
+
+  async getPatientMedicalHistory(): Promise<ApiResponse<any>> {
+    return this.request('/patient/medical-history');
+  }
+
+  async getPatientAppointments(): Promise<ApiResponse<any>> {
+    return this.request('/patient/appointments');
+  }
+
+  // Appointment methods
+  async createAppointment(data: any): Promise<ApiResponse<any>> {
+    return this.request('/appointments', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAppointment(appointmentId: string, data: any): Promise<ApiResponse<any>> {
+    return this.request(`/appointments/${appointmentId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async cancelAppointment(appointmentId: string): Promise<ApiResponse> {
+    return this.request(`/appointments/${appointmentId}/cancel`, {
+      method: 'POST',
+    });
+  }
+
   // Health check
   async healthCheck(): Promise<ApiResponse> {
     return this.request('/health');
